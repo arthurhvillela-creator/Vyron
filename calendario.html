@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VYRON | Calendário</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">VYRON<span>.</span></div>
+        <p class="menu-title">MENU PRINCIPAL</p>
+
+        <nav>
+            <a href="index.html">⌂ Dashboard</a>
+            <a href="tarefas.html">✓ Tarefas</a>
+            <a href="habitos.html">◷ Hábitos</a>
+            <a href="metas.html">◎ Metas</a>
+            <a href="calendario.html" class="active">▦ Calendário</a>
+        </nav>
+
+        <div class="profile">
+            <div class="avatar">A</div>
+            <div>
+                <strong>Meu Perfil</strong>
+                <small>Conta pessoal</small>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <header>
+            <div>
+                <p class="date">TEMPO E ORGANIZAÇÃO</p>
+                <h1>Calendário<span>.</span></h1>
+                <p class="subtitle">Organize seus compromissos e acompanhe seus dias.</p>
+            </div>
+
+            <div class="status">
+                <span></span> SISTEMA ATIVO
+            </div>
+        </header>
+
+        <section class="welcome">
+            <div>
+                <p>DOMINE SUA ROTINA</p>
+                <h2>O tempo passa.<br>Suas escolhas permanecem.</h2>
+                <span>Organização transforma intenção em compromisso.</span>
+            </div>
+            <div class="welcome-icon">▦</div>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <p>TOTAL DE EVENTOS</p>
+                <h2 id="totalEventos">00</h2>
+                <small>Compromissos registrados</small>
+            </div>
+
+            <div class="stat-card">
+                <p>EVENTOS DE HOJE</p>
+                <h2 id="eventosHoje">00</h2>
+                <small>Compromissos para hoje</small>
+            </div>
+
+            <div class="stat-card">
+                <p>PRÓXIMOS EVENTOS</p>
+                <h2 id="proximosEventos">00</h2>
+                <small>Eventos futuros</small>
+            </div>
+        </section>
+
+        <section class="panel calendar-panel">
+            <div class="calendar-header">
+                <button id="prevMonth">←</button>
+                <h3 id="monthTitle"></h3>
+                <button id="nextMonth">→</button>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </section>
+
+        <section class="panel calendar-panel">
+            <div class="panel-header">
+                <h3 id="selectedDateTitle">Novo compromisso</h3>
+                <span>AGENDA</span>
+            </div>
+
+            <form id="eventForm" class="event-form">
+                <input id="eventName" type="text"
+                    placeholder="Nome do compromisso..." required maxlength="80">
+
+                <input id="eventDate" type="date" required>
+
+                <button type="submit">Adicionar +</button>
+            </form>
+
+            <div id="eventList" class="event-list"></div>
+        </section>
+
+        <footer>
+            VYRON © 2026 — CONSTRUA SUA PRÓPRIA EVOLUÇÃO.
+        </footer>
+
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        const grid = document.getElementById("calendarGrid");
+        const monthTitle = document.getElementById("monthTitle");
+        const eventForm = document.getElementById("eventForm");
+        const eventList = document.getElementById("eventList");
+        const eventDate = document.getElementById("eventDate");
+
+        let eventos = JSON.parse(localStorage.getItem("vyron_eventos")) || [];
+
+        const agora = new Date();
+        let ano = agora.getFullYear();
+        let mes = agora.getMonth();
+        let dataSelecionada = formatarData(agora);
+
+        function formatarData(data) {
+            const a = data.getFullYear();
+            const m = String(data.getMonth() + 1).padStart(2, "0");
+            const d = String(data.getDate()).padStart(2, "0");
+            return `${a}-${m}-${d}`;
+        }
+
+        function salvarEventos() {
+            localStorage.setItem("vyron_eventos", JSON.stringify(eventos));
+            renderizarCalendario();
+            renderizarEventos();
+            atualizarEstatisticas();
+        }
+
+        function atualizarEstatisticas() {
+            const hoje = formatarData(new Date());
+
+            document.getElementById("totalEventos").textContent =
+                String(eventos.length).padStart(2, "0");
+
+            document.getElementById("eventosHoje").textContent =
+                String(eventos.filter(e => e.data === hoje).length).padStart(2, "0");
+
+            document.getElementById("proximosEventos").textContent =
+                String(eventos.filter(e => e.data > hoje).length).padStart(2, "0");
+        }
+
+        function renderizarCalendario() {
+            grid.innerHTML = "";
+
+            const nomesMeses = [
+                "Janeiro", "Fevereiro", "Março", "Abril",
+                "Maio", "Junho", "Julho", "Agosto",
+                "Setembro", "Outubro", "Novembro", "Dezembro"
+            ];
+
+            monthTitle.textContent = `${nomesMeses[mes]} ${ano}`;
+
+            const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+            diasSemana.forEach(dia => {
+                const elemento = document.createElement("div");
+                elemento.className = "calendar-day-name";
+                elemento.textContent = dia;
+                grid.appendChild(elemento);
+            });
+
+            const primeiroDia = new Date(ano, mes, 1).getDay();
+            const totalDias = new Date(ano, mes + 1, 0).getDate();
+
+            for (let i = 0; i < primeiroDia; i++) {
+                const vazio = document.createElement("div");
+                vazio.className = "calendar-cell empty-cell";
+                grid.appendChild(vazio);
+            }
+
+            for (let dia = 1; dia <= totalDias; dia++) {
+                const data = `${ano}-${String(mes + 1).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+
+                const celula = document.createElement("button");
+                celula.className = "calendar-cell";
+                celula.textContent = dia;
+
+                if (data === formatarData(new Date())) {
+                    celula.classList.add("today");
+                }
+
+                if (data === dataSelecionada) {
+                    celula.classList.add("selected");
+                }
+
+                if (eventos.some(e => e.data === data)) {
+                    celula.classList.add("has-event");
+                }
+
+                celula.addEventListener("click", () => {
+                    dataSelecionada = data;
+                    eventDate.value = data;
+                    renderizarCalendario();
+                    renderizarEventos();
+                });
+
+                grid.appendChild(celula);
+            }
+        }
+
+        function renderizarEventos() {
+            eventList.innerHTML = "";
+
+            document.getElementById("selectedDateTitle").textContent =
+                "Compromissos do dia";
+
+            const lista = eventos.filter(e => e.data === dataSelecionada);
+
+            if (lista.length === 0) {
+                eventList.innerHTML = `
+                    <div class="empty">
+                        <div>▦</div>
+                        <p>Nenhum compromisso nesta data.</p>
+                        <small>Adicione um compromisso acima.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            lista.forEach(evento => {
+                const item = document.createElement("div");
+                item.className = "event-item";
+
+                const nome = document.createElement("strong");
+                nome.textContent = evento.nome;
+
+                const excluir = document.createElement("button");
+                excluir.textContent = "Excluir";
+                excluir.className = "delete-task";
+
+                excluir.addEventListener("click", () => {
+                    eventos = eventos.filter(e => e.id !== evento.id);
+                    salvarEventos();
+                });
+
+                item.append(nome, excluir);
+                eventList.appendChild(item);
+            });
+        }
+
+        eventForm.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const nome = document.getElementById("eventName").value.trim();
+            const data = eventDate.value;
+
+            if (!nome || !data) return;
+
+            eventos.push({
+                id: Date.now(),
+                nome: nome,
+                data: data
+            });
+
+            dataSelecionada = data;
+
+            const partes = data.split("-").map(Number);
+            ano = partes[0];
+            mes = partes[1] - 1;
+
+            eventForm.reset();
+            eventDate.value = dataSelecionada;
+
+            salvarEventos();
+        });
+
+        document.getElementById("prevMonth").addEventListener("click", () => {
+            mes--;
+            if (mes < 0) {
+                mes = 11;
+                ano--;
+            }
+            renderizarCalendario();
+        });
+
+        document.getElementById("nextMonth").addEventListener("click", () => {
+            mes++;
+            if (mes > 11) {
+                mes = 0;
+                ano++;
+            }
+            renderizarCalendario();
+        });
+
+        eventDate.value = dataSelecionada;
+
+        eventDate.addEventListener("change", () => {
+            if (!eventDate.value) return;
+
+            dataSelecionada = eventDate.value;
+
+            const partes = dataSelecionada.split("-").map(Number);
+            ano = partes[0];
+            mes = partes[1] - 1;
+
+            renderizarCalendario();
+            renderizarEventos();
+        });
+
+        renderizarCalendario();
+        renderizarEventos();
+        atualizarEstatisticas();
+    </script>
+
+</body>
+</html>

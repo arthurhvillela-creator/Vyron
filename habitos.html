@@ -1,0 +1,221 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VYRON | Hábitos</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">VYRON<span>.</span></div>
+        <p class="menu-title">MENU PRINCIPAL</p>
+
+        <nav>
+            <a href="index.html">⌂ Dashboard</a>
+            <a href="tarefas.html">✓ Tarefas</a>
+            <a href="habitos.html" class="active">◷ Hábitos</a>
+            <a href="metas.html">◎ Metas</a>
+            <a href="calendario.html">▦ Calendário</a>
+        </nav>
+
+        <div class="profile">
+            <div class="avatar">A</div>
+            <div>
+                <strong>Meu Perfil</strong>
+                <small>Conta pessoal</small>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <header>
+            <div>
+                <p class="date">CONSISTÊNCIA E DISCIPLINA</p>
+                <h1>Hábitos<span>.</span></h1>
+                <p class="subtitle">Pequenas ações repetidas constroem grandes resultados.</p>
+            </div>
+
+            <div class="status">
+                <span></span> SISTEMA ATIVO
+            </div>
+        </header>
+
+        <section class="welcome">
+            <div>
+                <p>CONTROLE SUA ROTINA</p>
+                <h2>Não dependa da<br>vontade. Tenha método.</h2>
+                <span>A constância é construída nas decisões diárias.</span>
+            </div>
+            <div class="welcome-icon">◷</div>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <p>HÁBITOS CADASTRADOS</p>
+                <h2 id="totalHabitos">00</h2>
+                <small>Hábitos acompanhados</small>
+            </div>
+
+            <div class="stat-card">
+                <p>REALIZADOS HOJE</p>
+                <h2 id="realizados">00</h2>
+                <small>Concluídos no dia</small>
+            </div>
+
+            <div class="stat-card">
+                <p>PENDENTES HOJE</p>
+                <h2 id="pendentes">00</h2>
+                <small>Aguardando execução</small>
+            </div>
+        </section>
+
+        <section class="panel habit-panel">
+            <div class="panel-header">
+                <h3>Criar novo hábito</h3>
+                <span>NOVA ROTINA</span>
+            </div>
+
+            <form id="habitForm" class="task-form">
+                <input
+                    type="text"
+                    id="habitInput"
+                    placeholder="Ex: Estudar inglês..."
+                    maxlength="80"
+                    required
+                >
+
+                <button type="submit">Adicionar +</button>
+            </form>
+        </section>
+
+        <section class="panel habit-panel">
+            <div class="panel-header">
+                <h3>Minha rotina</h3>
+                <span>ACOMPANHAMENTO DIÁRIO</span>
+            </div>
+
+            <div id="habitList" class="habit-list"></div>
+        </section>
+
+        <footer>
+            VYRON © 2026 — CONSTRUA SUA PRÓPRIA EVOLUÇÃO.
+        </footer>
+
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        const form = document.getElementById("habitForm");
+        const input = document.getElementById("habitInput");
+        const list = document.getElementById("habitList");
+
+        let habitos = JSON.parse(localStorage.getItem("vyron_habitos")) || [];
+
+        const hoje = () => new Date().toLocaleDateString("en-CA");
+
+        function salvarHabitos() {
+            localStorage.setItem("vyron_habitos", JSON.stringify(habitos));
+            renderizarHabitos();
+        }
+
+        function renderizarHabitos() {
+            list.innerHTML = "";
+
+            const feitos = habitos.filter(h => h.dias.includes(hoje())).length;
+            const pendentes = habitos.length - feitos;
+
+            document.getElementById("totalHabitos").textContent =
+                String(habitos.length).padStart(2, "0");
+
+            document.getElementById("realizados").textContent =
+                String(feitos).padStart(2, "0");
+
+            document.getElementById("pendentes").textContent =
+                String(pendentes).padStart(2, "0");
+
+            if (habitos.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <div>◷</div>
+                        <p>Nenhum hábito cadastrado.</p>
+                        <small>Adicione seu primeiro hábito.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            habitos.forEach(habito => {
+                const feito = habito.dias.includes(hoje());
+
+                const item = document.createElement("div");
+                item.className = "habit-item";
+
+                const info = document.createElement("div");
+                info.className = "habit-info";
+
+                const nome = document.createElement("strong");
+                nome.textContent = habito.nome;
+
+                const status = document.createElement("small");
+                status.textContent = feito ? "Concluído hoje" : "Pendente hoje";
+                status.className = feito ? "habit-done" : "";
+
+                info.append(nome, status);
+
+                const actions = document.createElement("div");
+                actions.className = "habit-actions";
+
+                const check = document.createElement("button");
+                check.textContent = feito ? "Concluído" : "Marcar feito";
+                check.className = feito ? "habit-completed" : "habit-check";
+
+                check.addEventListener("click", () => {
+                    if (feito) {
+                        habito.dias = habito.dias.filter(d => d !== hoje());
+                    } else {
+                        habito.dias.push(hoje());
+                    }
+                    salvarHabitos();
+                });
+
+                const excluir = document.createElement("button");
+                excluir.textContent = "Excluir";
+                excluir.className = "delete-task";
+
+                excluir.addEventListener("click", () => {
+                    habitos = habitos.filter(h => h.id !== habito.id);
+                    salvarHabitos();
+                });
+
+                actions.append(check, excluir);
+                item.append(info, actions);
+                list.appendChild(item);
+            });
+        }
+
+        form.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const nome = input.value.trim();
+            if (!nome) return;
+
+            habitos.push({
+                id: Date.now(),
+                nome: nome,
+                dias: []
+            });
+
+            input.value = "";
+            salvarHabitos();
+        });
+
+        renderizarHabitos();
+    </script>
+
+</body>
+</html>

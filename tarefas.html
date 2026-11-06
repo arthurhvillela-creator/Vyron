@@ -1,0 +1,220 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VYRON | Tarefas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">VYRON<span>.</span></div>
+        <p class="menu-title">MENU PRINCIPAL</p>
+
+        <nav>
+            <a href="index.html">⌂ Dashboard</a>
+            <a href="tarefas.html" class="active">✓ Tarefas</a>
+            <a href="habitos.html">◷ Hábitos</a>
+            <a href="metas.html">◎ Metas</a>
+            <a href="calendario.html">▦ Calendário</a>
+        </nav>
+
+        <div class="profile">
+            <div class="avatar">A</div>
+            <div>
+                <strong>Meu Perfil</strong>
+                <small>Conta pessoal</small>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <header>
+            <div>
+                <p class="date">ORGANIZAÇÃO PESSOAL</p>
+                <h1>Tarefas<span>.</span></h1>
+                <p class="subtitle">Planeje suas atividades e execute o que precisa ser feito.</p>
+            </div>
+
+            <div class="status">
+                <span></span> SISTEMA ATIVO
+            </div>
+        </header>
+
+        <section class="welcome">
+            <div>
+                <p>CONTROLE SUAS AÇÕES</p>
+                <h2>Menos intenção.<br>Mais execução.</h2>
+                <span>Uma tarefa concluída vale mais que dez planejadas.</span>
+            </div>
+            <div class="welcome-icon">✓</div>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <p>TOTAL DE TAREFAS</p>
+                <h2 id="total">00</h2>
+                <small>Atividades registradas</small>
+            </div>
+
+            <div class="stat-card">
+                <p>CONCLUÍDAS</p>
+                <h2 id="concluidas">00</h2>
+                <small>Atividades finalizadas</small>
+            </div>
+
+            <div class="stat-card">
+                <p>PENDENTES</p>
+                <h2 id="pendentes">00</h2>
+                <small>Aguardando execução</small>
+            </div>
+        </section>
+
+        <section class="panel task-panel">
+            <div class="panel-header">
+                <h3>Adicionar tarefa</h3>
+                <span>NOVA ATIVIDADE</span>
+            </div>
+
+            <form id="taskForm" class="task-form">
+                <input
+                    type="text"
+                    id="taskInput"
+                    placeholder="Digite sua tarefa..."
+                    required
+                    maxlength="100"
+                >
+
+                <select id="taskPriority">
+                    <option value="Normal">Normal</option>
+                    <option value="Alta">Alta</option>
+                    <option value="Urgente">Urgente</option>
+                </select>
+
+                <button type="submit">Adicionar +</button>
+            </form>
+        </section>
+
+        <section class="panel task-panel">
+            <div class="panel-header">
+                <h3>Minha lista</h3>
+                <span>ATIVIDADES</span>
+            </div>
+
+            <div id="taskList" class="task-list"></div>
+        </section>
+
+        <footer>
+            VYRON © 2026 — CONSTRUA SUA PRÓPRIA EVOLUÇÃO.
+        </footer>
+
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        const form = document.getElementById("taskForm");
+        const input = document.getElementById("taskInput");
+        const priority = document.getElementById("taskPriority");
+        const list = document.getElementById("taskList");
+
+        let tarefas = JSON.parse(localStorage.getItem("vyron_tarefas")) || [];
+
+        function salvar() {
+            localStorage.setItem("vyron_tarefas", JSON.stringify(tarefas));
+            renderizar();
+        }
+
+        function renderizar() {
+            list.innerHTML = "";
+
+            const concluidas = tarefas.filter(t => t.concluida).length;
+            const pendentes = tarefas.length - concluidas;
+
+            document.getElementById("total").textContent =
+                String(tarefas.length).padStart(2, "0");
+
+            document.getElementById("concluidas").textContent =
+                String(concluidas).padStart(2, "0");
+
+            document.getElementById("pendentes").textContent =
+                String(pendentes).padStart(2, "0");
+
+            if (tarefas.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <div>✓</div>
+                        <p>Nenhuma tarefa registrada.</p>
+                        <small>Adicione sua primeira atividade acima.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            tarefas.forEach(tarefa => {
+                const item = document.createElement("div");
+                item.className = "task-item";
+
+                const info = document.createElement("div");
+                info.className = "task-info";
+
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = tarefa.concluida;
+
+                checkbox.addEventListener("change", () => {
+                    tarefa.concluida = checkbox.checked;
+                    salvar();
+                });
+
+                const nome = document.createElement("span");
+                nome.textContent = tarefa.nome;
+                nome.className = tarefa.concluida ? "completed" : "";
+
+                const tag = document.createElement("small");
+                tag.textContent = tarefa.prioridade;
+                tag.className = "priority " + tarefa.prioridade.toLowerCase();
+
+                const excluir = document.createElement("button");
+                excluir.textContent = "Excluir";
+                excluir.className = "delete-task";
+
+                excluir.addEventListener("click", () => {
+                    tarefas = tarefas.filter(t => t.id !== tarefa.id);
+                    salvar();
+                });
+
+                info.append(checkbox, nome, tag);
+                item.append(info, excluir);
+                list.appendChild(item);
+            });
+        }
+
+        form.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const nome = input.value.trim();
+
+            if (!nome) return;
+
+            tarefas.push({
+                id: Date.now(),
+                nome: nome,
+                prioridade: priority.value,
+                concluida: false
+            });
+
+            input.value = "";
+            priority.value = "Normal";
+
+            salvar();
+        });
+
+        renderizar();
+    </script>
+
+</body>
+</html>

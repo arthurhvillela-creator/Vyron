@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VYRON | Metas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="logo">VYRON<span>.</span></div>
+        <p class="menu-title">MENU PRINCIPAL</p>
+
+        <nav>
+            <a href="index.html">⌂ Dashboard</a>
+            <a href="tarefas.html">✓ Tarefas</a>
+            <a href="habitos.html">◷ Hábitos</a>
+            <a href="metas.html" class="active">◎ Metas</a>
+            <a href="calendario.html">▦ Calendário</a>
+        </nav>
+
+        <div class="profile">
+            <div class="avatar">A</div>
+            <div>
+                <strong>Meu Perfil</strong>
+                <small>Conta pessoal</small>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+
+        <header>
+            <div>
+                <p class="date">OBJETIVOS E EVOLUÇÃO</p>
+                <h1>Metas<span>.</span></h1>
+                <p class="subtitle">Defina objetivos e acompanhe seu progresso.</p>
+            </div>
+
+            <div class="status">
+                <span></span> SISTEMA ATIVO
+            </div>
+        </header>
+
+        <section class="welcome">
+            <div>
+                <p>CONSTRUA SEU FUTURO</p>
+                <h2>Objetivos claros.<br>Execução constante.</h2>
+                <span>Uma meta sem ação é apenas uma intenção.</span>
+            </div>
+            <div class="welcome-icon">◎</div>
+        </section>
+
+        <section class="stats">
+            <div class="stat-card">
+                <p>TOTAL DE METAS</p>
+                <h2 id="totalMetas">00</h2>
+                <small>Objetivos registrados</small>
+            </div>
+
+            <div class="stat-card">
+                <p>CONCLUÍDAS</p>
+                <h2 id="metasConcluidas">00</h2>
+                <small>Objetivos alcançados</small>
+            </div>
+
+            <div class="stat-card">
+                <p>EM ANDAMENTO</p>
+                <h2 id="metasAndamento">00</h2>
+                <small>Objetivos ativos</small>
+            </div>
+        </section>
+
+        <section class="panel goal-panel">
+            <div class="panel-header">
+                <h3>Criar nova meta</h3>
+                <span>NOVO OBJETIVO</span>
+            </div>
+
+            <form id="goalForm" class="goal-form">
+                <input id="goalName" type="text" placeholder="Nome da meta..." required maxlength="80">
+
+                <input id="goalTarget" type="number" placeholder="Valor total" min="1" step="1" required>
+
+                <button type="submit">Criar meta +</button>
+            </form>
+        </section>
+
+        <section class="panel goal-panel">
+            <div class="panel-header">
+                <h3>Meus objetivos</h3>
+                <span>PROGRESSO</span>
+            </div>
+
+            <div id="goalList" class="goal-list"></div>
+        </section>
+
+        <footer>
+            VYRON © 2026 — CONSTRUA SUA PRÓPRIA EVOLUÇÃO.
+        </footer>
+
+    </main>
+
+    <script src="script.js"></script>
+
+    <script>
+        const form = document.getElementById("goalForm");
+        const list = document.getElementById("goalList");
+
+        let metas = JSON.parse(localStorage.getItem("vyron_metas")) || [];
+
+        function salvarMetas() {
+            localStorage.setItem("vyron_metas", JSON.stringify(metas));
+            renderizarMetas();
+        }
+
+        function renderizarMetas() {
+            list.innerHTML = "";
+
+            const concluidas = metas.filter(m => m.progresso >= m.alvo).length;
+            const andamento = metas.length - concluidas;
+
+            document.getElementById("totalMetas").textContent =
+                String(metas.length).padStart(2, "0");
+
+            document.getElementById("metasConcluidas").textContent =
+                String(concluidas).padStart(2, "0");
+
+            document.getElementById("metasAndamento").textContent =
+                String(andamento).padStart(2, "0");
+
+            if (metas.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <div>◎</div>
+                        <p>Nenhuma meta cadastrada.</p>
+                        <small>Defina seu primeiro objetivo.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            metas.forEach(meta => {
+                const percentual = Math.min(
+                    100,
+                    Math.round((meta.progresso / meta.alvo) * 100)
+                );
+
+                const item = document.createElement("div");
+                item.className = "goal-item";
+
+                const topo = document.createElement("div");
+                topo.className = "goal-top";
+
+                const nome = document.createElement("strong");
+                nome.textContent = meta.nome;
+
+                const porcentagem = document.createElement("span");
+                porcentagem.textContent = percentual + "%";
+
+                topo.append(nome, porcentagem);
+
+                const barra = document.createElement("div");
+                barra.className = "goal-bar";
+
+                const preenchimento = document.createElement("div");
+                preenchimento.className = "goal-fill";
+                preenchimento.style.width = percentual + "%";
+
+                barra.appendChild(preenchimento);
+
+                const detalhes = document.createElement("small");
+                detalhes.textContent =
+                    meta.progresso + " de " + meta.alvo + " unidades";
+
+                const controles = document.createElement("div");
+                controles.className = "goal-controls";
+
+                const adicionar = document.createElement("button");
+                adicionar.textContent = "+ Progresso";
+                adicionar.className = "habit-check";
+                adicionar.disabled = meta.progresso >= meta.alvo;
+
+                adicionar.addEventListener("click", () => {
+                    meta.progresso = Math.min(meta.alvo, meta.progresso + 1);
+                    salvarMetas();
+                });
+
+                const remover = document.createElement("button");
+                remover.textContent = "Excluir";
+                remover.className = "delete-task";
+
+                remover.addEventListener("click", () => {
+                    metas = metas.filter(m => m.id !== meta.id);
+                    salvarMetas();
+                });
+
+                controles.append(adicionar, remover);
+
+                item.append(topo, barra, detalhes, controles);
+                list.appendChild(item);
+            });
+        }
+
+        form.addEventListener("submit", event => {
+            event.preventDefault();
+
+            const nome = document.getElementById("goalName").value.trim();
+            const alvo = Number(document.getElementById("goalTarget").value);
+
+            if (!nome || !Number.isInteger(alvo) || alvo < 1) return;
+
+            metas.push({
+                id: Date.now(),
+                nome: nome,
+                alvo: alvo,
+                progresso: 0
+            });
+
+            form.reset();
+            salvarMetas();
+        });
+
+        renderizarMetas();
+    </script>
+
+</body>
+</html>
